@@ -1,1 +1,1 @@
-# North of here
+# North direction
