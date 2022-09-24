@@ -63,7 +63,6 @@ d3.csv("../assets/data/cyberpunk-2077.csv").then((data) => {
     d["rs"] = Number(d["Final price(RS)"]);
     d["eu"] = Number(d["Final price(EU)"]);
   });
-  console.log(data);
   cleanData = data;
   keys = ["us", "uk", "eu", "rs", "rm"];
   updateChart();
