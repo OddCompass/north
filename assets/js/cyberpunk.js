@@ -13,6 +13,7 @@ const mainG = canvas
   .attr("transform", `translate(${MARGIN.LEFT},${MARGIN.TOP})`);
 
 let parseTime = d3.timeParse("%m/%d/%Y %H:%M");
+let formatTime = d3.timeFormat("%m/%d/%Y %H:%M");
 let currencyType = "us";
 
 const xScale = d3.scaleTime().range([0, WIDTH]);
@@ -52,6 +53,10 @@ let linePath = mainG
   .attr("fill", "none")
   .attr("stroke-width", 3);
 
+const legend = mainG
+  .append("g")
+  .attr("transform", `translate(${WIDTH - 100},${HEIGHT - 100})`);
+
 let cleanData;
 let keys;
 d3.csv("../assets/data/cyberpunk-2077.csv").then((data) => {
@@ -80,6 +85,73 @@ function updateChart() {
   ]);
   colorScale.domain(keys);
 
+  //------------------------------tool tip ----------------------
+
+  const focus = mainG
+    .append("g")
+    .attr("class", "focus")
+    .style("display", "none");
+
+  let focusCirc = focus.append("circle").attr("r", 5);
+  let focusText = focus
+    .append("text")
+    .attr("x", -15)
+    .attr("y", -8)
+    .attr("text-anchor", "end");
+
+  mainG
+    .append("rect")
+    .attr("width", WIDTH)
+    .attr("height", HEIGHT)
+    .attr("class", "overlay")
+    .on("mouseover", () => focus.style("display", null))
+    .on("mouseout", () => focus.style("display", "none"))
+    .on("mousemove", popup);
+
+  function popup(event) {
+    let point = d3.pointer(event);
+    const x0 = xScale.invert(point[0]);
+    const y0 = yScale.invert(point[1]);
+
+    const exactData = cleanData.filter((d) => {
+      return d["time"].getTime() >= x0.getTime();
+    });
+    if (exactData.length > 0) {
+      let exactPoint = exactData[0];
+
+      focus.attr(
+        "transform",
+        `translate(${xScale(exactPoint["time"])},${yScale(
+          exactPoint[currencyType]
+        )})`
+      );
+      focusText.text(exactPoint[currencyType]);
+    }
+  }
+
+  //------------------------toot tip ------------------------
+
+  keys.forEach((d, i) => {
+    let legendG = legend
+      .append("g")
+      .attr("transform", `translate(0,${i * 20})`);
+
+    legendG
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("fill", colorScale(d))
+      .attr("width", 10)
+      .attr("height", 10);
+
+    legendG
+      .append("text")
+      .attr("x", 25)
+      .attr("y", 8)
+      .style("text-transform", "uppercase")
+      .text(d);
+  });
+
   xAxisG
     .call(xAxisCall)
     .selectAll("text")
@@ -89,6 +161,7 @@ function updateChart() {
     .attr("text-anchor", "end");
   yAxisG.transition(t).call(yAxisCall);
   yAxisLabel.text(`Price (${currencyType})`);
+
   linePath
     .transition(t)
     .attr("d", lineDraw(cleanData))
